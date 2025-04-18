@@ -1,0 +1,4 @@
+A következő vázlat alapján készíts egy részletes, szakmailag alapos, elemző stílusú gazdasági összefoglalót magyar nyelven. A szöveg legyen koherens, logikusan felépített, adatokkal alátámasztott, tartalmazzon szakértői véleményeket és idézeteket is, ahol releváns. Használj Markdown formázást (címsorokat, felsorolásokat, linkeket):
+
+Vázlat:
+{outline}
