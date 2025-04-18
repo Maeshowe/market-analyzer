@@ -35,7 +35,7 @@ def brave_search(query, num_results=5):
     return results.get('web', {}).get('results', [])
 
 # GPT-4.1-es API hívás függvénye (javított)
-def generate_gpt_response(prompt, model="gpt-4.1", temperature=0.7, max_tokens=3000):
+def generate_gpt_response(prompt, model="gpt-4.1", temperature=0.7, max_tokens=7500):
     response = client.chat.completions.create(
         model=model,
         messages=[
