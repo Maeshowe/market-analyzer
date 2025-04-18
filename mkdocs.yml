@@ -1,8 +1,12 @@
 site_name: "Napi Gazdasági Elemző Rendszer"
 theme:
   name: material
+  language: hu
 
 nav:
   - Kezdőlap: index.md
   - Napi jelentések: 
-      - "Legfrissebb": daily/latest.md
+      - Legfrissebb jelentés: daily/latest.md
+
+plugins:
+  - search

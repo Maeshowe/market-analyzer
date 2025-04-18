@@ -60,5 +60,10 @@ def main():
     output_file.write_text(analysis, encoding="utf-8")
     print(f"📄 Jelentés mentve ide: {output_file}")
 
+    # Legfrissebb jelentés frissítése
+    latest_path = output_dir / "latest.md"
+    latest_path.write_text(analysis, encoding="utf-8")
+    print(f"🔄 Legfrissebb jelentés frissítve: {latest_path}")
+
 if __name__ == "__main__":
     main()
