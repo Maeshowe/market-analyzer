@@ -3,12 +3,14 @@ from googleapiclient.discovery import build
 import requests
 from config_loader import load_credentials, load_settings
 
-# Credential és beállítások betöltése
 credentials = load_credentials()
 settings = load_settings()
 
 # OpenAI kliens létrehozása (új API formátumhoz)
 client = openai.OpenAI(api_key=credentials["openai_api_key"])
+
+# GPT token limit YAML konfigurációból
+max_tokens = settings["general"]["token_limit"]
 
 # Google Custom Search konfiguráció nyelvi támogatással
 def google_search(query, num_results=5, language="en"):
@@ -48,8 +50,8 @@ def brave_search(query, num_results=5, language="en"):
     } for item in items]
     return formatted_results
 
-# GPT-4.1-es API hívás függvénye (változatlan)
-def generate_gpt_response(prompt, model="gpt-4.1", temperature=0.7, max_tokens=7500):
+# GPT-4.1-es API hívás függvénye konfiguráció alapján
+def generate_gpt_response(prompt, model="gpt-4.1", temperature=0.7, max_tokens=max_tokens):
     response = client.chat.completions.create(
         model=model,
         messages=[

@@ -2,6 +2,10 @@ from datetime import datetime
 from pathlib import Path
 from api_clients import generate_gpt_response
 from run_searches import perform_gpt_generated_searches
+from config_loader import load_settings
+
+settings = load_settings()
+max_tokens = settings["general"]["token_limit"]
 
 def load_prompt(template_name):
     path = Path(__file__).parent.parent / "prompts" / template_name
@@ -19,17 +23,17 @@ def format_search_results(search_results, max_per_topic=2):
 def generate_outline(formatted_results, date_str):
     outline_prompt_template = load_prompt("outline_prompt.txt")
     prompt = outline_prompt_template.format(date=date_str, search_results=formatted_results)
-    return generate_gpt_response(prompt)
+    return generate_gpt_response(prompt, max_tokens=max_tokens)
 
 def generate_analysis(outline, date_str):
     analysis_prompt_template = load_prompt("analysis_prompt.txt")
     prompt = analysis_prompt_template.format(date=date_str, outline=outline)
-    return generate_gpt_response(prompt)
+    return generate_gpt_response(prompt, max_tokens=max_tokens)
 
 def refine_analysis(draft):
     refinement_prompt_template = load_prompt("refinement_prompt.txt")
     prompt = refinement_prompt_template.format(draft=draft)
-    return generate_gpt_response(prompt)
+    return generate_gpt_response(prompt, max_tokens=max_tokens)
 
 def main():
     date_str = datetime.now().strftime("%Y-%m-%d")
