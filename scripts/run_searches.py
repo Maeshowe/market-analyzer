@@ -2,6 +2,7 @@ import yaml
 from pathlib import Path
 from api_clients import google_search, brave_search
 from config_loader import load_settings
+from query_builder import build_query
 
 # Beállítások betöltése
 settings = load_settings()
@@ -14,7 +15,7 @@ def perform_searches():
     search_results = {}
 
     for topic in topics:
-        query = topic["query"]
+        query = build_query(topic["id"])
         topic_name = topic["name"]
         print(f"\n🔍 Keresés: {topic_name} – '{query}'")
 
