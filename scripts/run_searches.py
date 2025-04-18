@@ -1,62 +1,71 @@
-import yaml
-from pathlib import Path
+from datetime import datetime
+from query_generator import generate_search_queries
 from api_clients import google_search, brave_search
 from config_loader import load_settings
-from query_builder import build_query
 
-# Beállítások betöltése
 settings = load_settings()
 
-def perform_searches():
-    topics = settings["topics"]
-    max_results = settings["search"]["max_results_per_topic"]
+def perform_gpt_generated_searches():
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    queries_by_topic = generate_search_queries(date_str)
+
+    max_results_per_query = settings["search"]["max_results_per_topic"]
     primary_provider = settings["search"]["primary_provider"]
+    fallback_provider = settings["search"]["fallback_provider"]
+    search_language = settings["search"].get("search_language", "en")
 
     search_results = {}
 
-    for topic in topics:
-        query = build_query(topic["id"])
-        topic_name = topic["name"]
-        print(f"\n🔍 Keresés: {topic_name} – '{query}'")
+    print(f"\n🔎 GPT által generált keresések futtatása dátummal: {date_str}\n")
 
-        try:
-            # Elsődleges kereső: Google
+    for topic, queries in queries_by_topic.items():
+        print(f"📌 Téma: {topic}")
+        search_results[topic] = {"topic_name": topic, "results": []}
+
+        for query in queries:
+            print(f" - Lekérdezés: '{query}'")
+
+            results = []
+
+            # Elsődleges kereső API
             if primary_provider == "google":
-                results = google_search(query, max_results)
-                if not results:
-                    raise ValueError("Google nem adott találatot.")
-            # Másik keresőre váltás, ha nincs találat
+                try:
+                    results = google_search(query, max_results_per_query, language=search_language)
+                    if not results:
+                        raise ValueError("Google API nem adott találatot.")
+                except Exception as e:
+                    print(f"   ⚠️ Google API hiba vagy limit: {e}, átváltás Brave API-ra.")
+                    results = brave_search(query, max_results_per_query, language=search_language)
+
+            elif primary_provider == "brave":
+                try:
+                    results = brave_search(query, max_results_per_query, language=search_language)
+                    if not results:
+                        raise ValueError("Brave API nem adott találatot.")
+                except Exception as e:
+                    print(f"   ⚠️ Brave API hiba vagy limit: {e}, átváltás Google API-ra.")
+                    results = google_search(query, max_results_per_query, language=search_language)
+
+            else:
+                print(f"   ⚠️ Ismeretlen elsődleges keresőszolgáltató: '{primary_provider}'.")
+
+            # Ha még mindig nincs eredmény, logoljuk
             if not results:
-                print("Google találatok nem érhetők el vagy üresek, váltás Brave-re.")
-                results = brave_search(query, max_results)
-        except Exception as e:
-            print(f"Hiba történt a keresés során: {e}")
-            print("Váltás Brave keresőre.")
-            results = brave_search(query, max_results)
+                print(f"   ❌ Nincs találat a '{query}' lekérdezésre egyik API-nál sem.")
+            else:
+                print(f"   ✅ {len(results)} találat érkezett.")
 
-        formatted_results = []
-        for res in results:
-            formatted_results.append({
-                "title": res.get("title", "N/A"),
-                "snippet": res.get("snippet") or res.get("description", "N/A"),
-                "link": res.get("link") or res.get("url", "N/A")
-            })
+            search_results[topic]["results"].extend(results)
 
-        search_results[topic["id"]] = {
-            "topic_name": topic_name,
-            "results": formatted_results
-        }
-
-        print(f"✅ Találatok: {len(formatted_results)} db")
-
+    print("\n🎯 Keresések befejezve.")
     return search_results
 
-# Fő futtató blokk teszteléshez
+# Tesztfuttatás (önálló scriptként való futtatásra)
 if __name__ == "__main__":
-    results = perform_searches()
+    final_results = perform_gpt_generated_searches()
 
-    # Eredmények megjelenítése
-    for topic_id, content in results.items():
-        print(f"\n📌 {content['topic_name']} – Összes találat: {len(content['results'])}")
-        for res in content['results'][:3]:  # első 3 találat röviden
-            print(f" • {res['title']}\n   {res['snippet']}\n   🔗 {res['link']}\n")
+    # Rövid összegzés kiíratása a terminálra ellenőrzéshez
+    for topic, data in final_results.items():
+        print(f"\n📚 Eredmények a '{topic}' témában ({len(data['results'])} találat):")
+        for res in data['results']:
+            print(f"- {res['title']} ({res['link']})")
