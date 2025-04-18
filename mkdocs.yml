@@ -1,4 +1,19 @@
 site_name: "Napi Piaci Elemző"
+theme:
+  name: material
+  palette:
+    scheme: default
+    primary: blue grey
+    accent: teal
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.top
+    - navigation.indexes
+
 plugins:
   - search
   - awesome-pages
