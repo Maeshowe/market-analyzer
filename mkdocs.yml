@@ -1,12 +1,9 @@
-site_name: "Napi Gazdasági Elemző Rendszer"
-theme:
-  name: material
-  language: hu
-
-nav:
-  - Kezdőlap: index.md
-  - Napi jelentések: 
-      - Legfrissebb jelentés: daily/latest.md
-
+site_name: "Napi Piaci Elemző"
 plugins:
   - search
+  - awesome-pages
+
+nav:
+  - Főoldal: index.md
+  - Legfrissebb jelentés: daily/latest.md
+  - Archívum: daily
