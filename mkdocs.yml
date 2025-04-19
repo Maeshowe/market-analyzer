@@ -21,4 +21,14 @@ plugins:
 nav:
   - Főoldal: index.md
   - Legfrissebb jelentés: daily/latest.md
-  - Archívum: daily
+  - Jelentések archívum: daily/
+  - Blog:
+      - Elemzések: blog/elemzesek/
+      - Technológia: blog/technologia/
+      - Hírek: blog/hirek/
+  - Projekt dokumentáció:
+      - Technikai leírás: dokumentacio/technikai-leiras.md
+      - API dokumentáció: dokumentacio/api-dokumentacio.md
+      - GitHub repository: dokumentacio/github.md
+      - Közreműködők: dokumentacio/kozremukodok.md
+  - Kapcsolat: kapcsolat.md

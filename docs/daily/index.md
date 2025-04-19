@@ -1,5 +1,5 @@
-# Archívum
+# Jelentések Archívuma
 
-Itt találod a napi piaci elemzések archívumát havi bontásban.
+Itt találod a korábbi napi piaci jelentések archívumát havi bontásban.
 
-A navigációs menüt használd az archívum böngészésére.
+Használd a bal oldali navigációs panelt az egyes hónapok közötti navigáláshoz!
