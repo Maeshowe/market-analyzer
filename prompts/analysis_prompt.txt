@@ -4,6 +4,13 @@ Az elemzés hossza 2000–2500 szó legyen. Biztosíts részletes háttéradatok
 
 Az elemzés legyen logikusan strukturált, követhető, professzionális, de könnyen olvasható stílusú.
 
+## 📌 FONTOS! KIZÁRÓLAG AZ ALÁBB MEGADOTT PIACI ADATOKAT HASZNÁLHATOD AZ ELEMZÉSBEN!
+Semmilyen más forrást vagy saját korábbi tudást ne használj a piaci árfolyamokra, indexekre, devizákra és nyersanyagokra vonatkozóan!
+
+{market_data}
+
+---
+
 Az alábbi struktúra szerint dolgozz, minden témakörben mélyebb részletekkel és magyarázatokkal:
 
 ## 1. Bevezetés
@@ -28,7 +35,7 @@ Az alábbi struktúra szerint dolgozz, minden témakörben mélyebb részletekke
 ### 2.3 Opciós piac, algoritmikus kereskedés és volatilitás
 
 - Részletes elemzés az opciós piac aktivitásáról, jelentősebb volumenű opciós ügyletekről.
-- VIX index mélyebb elemzése, értékelése.
+- VIX index mélyebb elemzése, értékelése (kizárólag a megadott adatból dolgozz!).
 - Algoritmikus kereskedési trendek, short és long pozíciók elmozdulásai, ezek piaci hangulatbefolyásoló hatásai.
 
 ### 2.4 Kötvénypiac és kamatvárakozások
@@ -41,8 +48,8 @@ Az alábbi struktúra szerint dolgozz, minden témakörben mélyebb részletekke
 
 - Ázsiai piacok (Japán, Kína, Dél-Korea) teljesítménye, helyi gazdasági adatokkal alátámasztva.
 - Európai tőzsdék elemzése: DAX, CAC 40, FTSE 100 indexek.
-- Részletes devizapiaci elemzés: USD, EUR, jüan, jen árfolyamváltozásai és ezek gazdasági következményei.
-- Nyersanyagpiac (olaj, arany, egyéb árupiaci termékek) mozgásai, okok és várható tendenciák.
+- Részletes devizapiaci elemzés: USD, EUR, jüan, jen árfolyamváltozásai és ezek gazdasági következményei (kizárólag a megadott adatokat használhatod).
+- Nyersanyagpiac (olaj, arany, réz) mozgásai, okok és várható tendenciák (kizárólag a megadott adatokat használhatod).
 
 ### 2.6 Makrogazdasági adatok és vállalati gyorsjelentések
 
@@ -62,10 +69,14 @@ Válassz ki egy aktuálisan releváns témát (például AI-technológia hatása
 
 ---
 
-## Fontos utasítások:
+## ⚠️ Fontos utasítások:
 
 - Mindig hiteles forrásokat használj (Bloomberg, Reuters, FT, CNBC), pontosan hivatkozz rájuk a szövegben.
-- Minden adatot, idézetet egyértelműen és expliciten jelölj meg forrással (például: Bloomberg, 2025/04/18).
+- Minden adatot, idézetet egyértelműen és expliciten jelölj meg forrással (például: Bloomberg, {date}).
 - Használj Chain-of-Thought módszert, világosan mutasd be a logikai következtetéseket.
 - Ügyelj a professzionális, mégis könnyen érthető stílusra.
 - A dátum mindenhol pontosan a mai nap ({date}) legyen.
+- Ha olyan adatra van szükséged, ami nincs a promptban, tedd azt szögletes zárójelbe magyar nyelven, pl.: [EUR/GBP árfolyam].
+- Ha olyan adatra van szükséged, ami nincs a promptban, tedd azt szögletes zárójelbe magyar nyelven, pl.: [EUR/GBP árfolyam].
+- FONTOS: Csak olyan adatokat használj, amelyeket a promptban megkapsz. Ha más, nem szereplő adatra van szükséged, mindig jelezd szögletes zárójelben, hogy automatikusan lekérhessük számodra.
+- SEMMILYEN MÁS, NEM MEGADOTT PIACI ADATOT NEM HASZNÁLHATSZ FEL!
