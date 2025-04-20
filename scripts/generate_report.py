@@ -1,149 +1,116 @@
+import os
 from datetime import datetime
-from pathlib import Path
-import re
-
 from api_clients import generate_gpt_response
-from config_loader import load_credentials
 from market_data_fetcher import fetch_market_data
-from macro_data_fetcher import fetch_macro_data
-from earnings_data_fetcher import fetch_earnings
-from news_fetcher import fetch_news
+from web_search import perform_gpt_generated_searches
 from alternative_data_fetcher import fetch_alternative_sentiment
-from web_search import perform_web_search
+from macro_data_fetcher import fetch_macro_data
+from earnings_data_fetcher import fetch_earnings_data
+from news_fetcher import fetch_news
+from translator import translate_to_hungarian
+from config_loader import load_settings, load_prompts
+from utils import identify_missing_data, fetch_additional_data, format_market_data_prompt
 
-# Prompt betöltése
-def load_prompt(template_name):
-    path = Path(__file__).parent.parent / "prompts" / template_name
-    with open(path, "r", encoding="utf-8") as file:
-        return file.read()
+settings = load_settings()
+prompts = load_prompts()
 
-# Webes keresési eredmények formázása
-def format_search_results(search_results, max_per_topic=3):
-    formatted = ""
-    for topic in search_results.values():
-        formatted += f"\n## {topic['topic_name']}\n"
-        for res in topic["results"][:max_per_topic]:
-            formatted += f"- [{res['title']}]({res['link']}): {res['snippet']}\n"
-    return formatted
-
-# Piaci és makroadatok előkészítése prompthoz
-def prepare_prompt_data():
-    market_symbols = ["^GSPC", "^DJI", "^IXIC", "EURUSD=X", "USDJPY=X", "GC=F", "CL=F", "HG=F"]
-    market_data = {sym: fetch_market_data(sym) for sym in market_symbols}
-
-    macro_data = fetch_macro_data()
-    earnings_symbols = ["AAPL", "TSLA", "NVDA", "JPM"]
-    earnings_data = {sym: fetch_earnings(sym) for sym in earnings_symbols}
-    sentiment_data = {sym: fetch_alternative_sentiment(sym) for sym in earnings_symbols}
-    news_data = fetch_news("stock market")
-
-    return market_data, macro_data, earnings_data, sentiment_data, news_data
-
-# GPT-4.1 jelentés generálása
-def generate_market_report(date_str, formatted_results, market_data, macro_data, earnings_data, sentiment_data, news_data, additional_data=""):
-    prompt_template = load_prompt("analysis_prompt.txt")
-
-    prompt_filled = prompt_template.format(
+def generate_outline(search_results, market_data, sentiment_data, macro_data, earnings_data, news_data, date_str):
+    prompt = prompts["outline_prompt"].format(
         date=date_str,
+        search_results=search_results,
         market_data=market_data,
+        sentiment_data=sentiment_data,
         macro_data=macro_data,
         earnings_data=earnings_data,
-        sentiment_data=sentiment_data,
-        news_data=news_data,
-        search_results=formatted_results,
-        additional_data=additional_data
+        news_data=news_data
     )
+    return generate_gpt_response(prompt, max_tokens=settings["general"]["token_limit"])
 
-    report = generate_gpt_response(prompt_filled)
-    return report
+def generate_analysis(outline, market_data_prompt, date_str):
+    prompt = prompts["analysis_prompt"].format(outline=outline, market_data_prompt=market_data_prompt, date=date_str)
+    return generate_gpt_response(prompt, max_tokens=settings["general"]["token_limit"])
 
-# Jelentés mentése fájlba
-def save_report(report, date_str):
-    output_dir = Path(__file__).parent.parent / "docs" / "daily" / datetime.now().strftime("%Y/%m")
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    file_name = f"{date_str}-piaci-jelentes.md"
-    output_file = output_dir / file_name
-    output_file.write_text(report, encoding="utf-8")
-    print(f"📄 Jelentés mentve: {output_file}")
-
-    latest_path = Path(__file__).parent.parent / "docs" / "daily" / "latest.md"
-    latest_path.write_text(report, encoding="utf-8")
-    print(f"🔄 Legfrissebb jelentés frissítve: {latest_path}")
-
-# Hiányzó adatok felismerése GPT-vel
-def find_missing_data(gpt_report):
-    pattern = re.compile(r"\[(.*?)\]")
-    return pattern.findall(gpt_report)
-
-# Hiányzó adatok automatikus lekérése
-def fetch_missing_data(data_requests):
-    translations = {
-        "EUR/GBP árfolyam": "EURGBP=X",
-        "EUR/USD árfolyam": "EURUSD=X",
-        "palládium ára": "PA=F",
-        "brent olaj ára": "BZ=F",
-        "USA GDP": "GDP",
-        "USA infláció": "CPI",
-        "munkanélküliségi ráta": "UNEMPLOYMENT"
-    }
-
-    data_responses = {}
-    macro_data = fetch_macro_data()
-
-    for request in data_requests:
-        symbol = translations.get(request, None)
-
-        if symbol is None:
-            data_responses[request] = "Adat nem található"
-            continue
-
-        if symbol in ["GDP", "CPI", "UNEMPLOYMENT"]:
-            data_responses[request] = macro_data.get(symbol, "Nincs adat")
-        else:
-            data_responses[request] = fetch_market_data(symbol)
-    return data_responses
-
-# Iteratív jelentésgenerálás hiányzó adatokkal
-def generate_refined_report(date_str, draft_report, formatted_results, market_data, macro_data, earnings_data, sentiment_data, news_data):
-    missing_data_requests = find_missing_data(draft_report)
-    
-    if missing_data_requests:
-        print(f"🔍 Hiányzó adatok: {missing_data_requests}")
-        additional_data = fetch_missing_data(missing_data_requests)
-        print(f"📊 Lekért további adatok: {additional_data}")
-
-        refined_report = generate_market_report(
-            date_str, formatted_results, market_data, macro_data,
-            earnings_data, sentiment_data, news_data, additional_data=additional_data
+def perform_iterative_tuning(draft_analysis, market_data_prompt, date_str, iterations=2):
+    analysis = draft_analysis
+    for i in range(iterations):
+        refinement_prompt = prompts["refinement_prompt"].format(
+            draft_analysis=analysis,
+            market_data_prompt=market_data_prompt,
+            date=date_str
         )
-        return refined_report
-    else:
-        return draft_report
+        analysis = generate_gpt_response(refinement_prompt, max_tokens=settings["general"]["token_limit"])
+        print(f"🔄 Iteration {i+1} of refinement completed.")
+    return analysis
 
-# Teljes folyamat végrehajtása
+def save_report(content, directory, filename):
+    os.makedirs(directory, exist_ok=True)
+    filepath = os.path.join(directory, filename)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+    return filepath
+
 def main():
     date_str = datetime.now().strftime("%Y-%m-%d")
-    print(f"🗓️ Jelentés készítése dátummal: {date_str}")
+    print(f"🗓️ Generating market report for date: {date_str}")
 
-    print("\n🔎 Webes keresések végrehajtása...")
-    queries = ["US stock market today", "economic policy", "bond yields", "options market", "Asia market", "commodity prices"]
-    search_results = {query: {"topic_name": query, "results": perform_web_search(query)} for query in queries}
-    formatted_results = format_search_results(search_results)
+    print("🔎 Performing GPT-generated searches...")
+    search_results = perform_gpt_generated_searches()
 
-    print("\n📊 Friss pénzügyi adatok lekérdezése API-kkal...")
-    market_data, macro_data, earnings_data, sentiment_data, news_data = prepare_prompt_data()
+    print("📊 Fetching market data...")
+    market_data = fetch_market_data()
 
-    print("\n🤖 Első draft jelentés generálása...")
-    draft_report = generate_market_report(date_str, formatted_results, market_data, macro_data, earnings_data, sentiment_data, news_data)
+    print("📈 Fetching alternative sentiment data...")
+    sentiment_data = fetch_alternative_sentiment()
 
-    print("\n🧐 Hiányzó adatok ellenőrzése...")
-    final_report = generate_refined_report(date_str, draft_report, formatted_results, market_data, macro_data, earnings_data, sentiment_data, news_data)
+    print("📉 Fetching macroeconomic data...")
+    macro_data = fetch_macro_data()
 
-    print("\n💾 Jelentés mentése...")
-    save_report(final_report, date_str)
+    print("📑 Fetching earnings data...")
+    earnings_data = fetch_earnings_data()
 
-    print("\n✅ Jelentésgenerálás sikeresen befejeződött.")
+    print("📰 Fetching news data...")
+    news_data = fetch_news()
+
+    market_data_prompt = format_market_data_prompt(market_data, date_str)
+
+    print("📝 Generating report outline...")
+    outline = generate_outline(
+        search_results, market_data, sentiment_data, macro_data, earnings_data, news_data, date_str)
+
+    print("📊 Generating draft analysis...")
+    draft_analysis = generate_analysis(outline, market_data_prompt, date_str)
+
+    print("🔍 Checking for missing data...")
+    missing_data = identify_missing_data(draft_analysis, market_data)
+    if missing_data:
+        print(f"🔄 Missing data found: {missing_data}")
+        additional_data = fetch_additional_data(missing_data)
+        market_data_prompt += "\n" + format_market_data_prompt(additional_data, date_str)
+    else:
+        print("✅ No missing data found.")
+
+    print("🔄 Performing iterative tuning...")
+    final_analysis_en = perform_iterative_tuning(draft_analysis, market_data_prompt, date_str)
+
+    print("🌍 Translating analysis to Hungarian...")
+    final_analysis_hu = translate_to_hungarian(final_analysis_en)
+
+    output_dir_en = os.path.join(settings["output"]["output_dir"], "en")
+    output_dir_hu = os.path.join(settings["output"]["output_dir"], "hu")
+
+    filename_en = date_str + "-market-report-en.md"
+    filename_hu = date_str + "-piaci-jelentes-hu.md"
+
+    print("💾 Saving English report...")
+    save_report(final_analysis_en, output_dir_en, filename_en)
+
+    print("💾 Saving Hungarian report...")
+    save_report(final_analysis_hu, output_dir_hu, filename_hu)
+
+    save_report(final_analysis_en, output_dir_en, "latest.md")
+    save_report(final_analysis_hu, output_dir_hu, "latest.md")
+
+    print("✅ Market reports saved successfully.")
 
 if __name__ == "__main__":
     main()

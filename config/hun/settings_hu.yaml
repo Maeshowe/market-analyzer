@@ -1,0 +1,44 @@
+general:
+  language: "hu"
+  model: "gpt-4.1"
+  token_limit: 7500
+  num_iterations: 2
+
+search:
+  primary_provider: "google"
+  fallback_provider: "brave"
+  max_results_per_topic: 5
+  search_language: "en"
+
+prompt_parameters:
+  analysis_length_words: [2000, 2500]
+  sources_required: 5
+
+output:
+  output_dir: "docs/daily"
+  filename_format: "%Y-%m-%d-piaci-jelentes.md"
+
+topics:
+  - id: "us_stocks"
+    name: "Amerikai részvénypiac"
+    description: "Nasdaq, Dow Jones, S&P 500 indexek, Apple, Tesla, Nvidia stocks"
+
+  - id: "us_politics"
+    name: "Politikai és gazdaságpolitikai események (USA)"
+    description: "Donald Trump statements, White House announcements, US economic policy and tariffs"
+
+  - id: "fed_bonds"
+    name: "Fed, kötvénypiac, hozamgörbe"
+    description: "Federal Reserve interest rate decisions, bond yields, monetary policy"
+
+  - id: "options_volatility"
+    name: "Opciós kereskedés és volatilitás"
+    description: "Options market, VIX volatility index, short positions"
+
+  - id: "intl_markets"
+    name: "Ázsiai és Európai piacok"
+    description: "Asian markets (Japan, China, South Korea), European markets (Germany, France, UK), forex"
+
+  - id: "commodities"
+    name: "Árupiaci mozgások"
+    description: "Oil, gold, commodity prices, daily market trends"

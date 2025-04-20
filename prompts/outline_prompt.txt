@@ -1,5 +1,5 @@
-A következő témákban gyűjtött adatok alapján készíts egy rövid, pontokba szedett vázlatot a mai globális piaci eseményekről ({date}):
+Based on the data collected on the following topics, create a brief, bullet-point outline summarizing today’s global market events ({date}):
 
 {search_results}
 
-Minden témához 2-3 kulcspontot írj, amelyek összefoglalják a legfontosabb eseményeket, mozgásokat, döntéseket.
+For each topic, list 2-3 key points summarizing the most important events, market movements, and decisions.
