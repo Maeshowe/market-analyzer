@@ -1,12 +1,12 @@
 # generate_report.py (strukturált javaslat)
 
 import datetime
-from scripts.market_data import fetch_market_data
-from scripts.earnings_data_fetcher import fetch_earnings
-from scripts.news_fetcher import fetch_news
-from scripts.web_search import perform_gpt_generated_searches
-from scripts.api_clients import generate_gpt_response
-from scripts.config_loader import load_settings
+from market_data import fetch_market_data
+from earnings_data_fetcher import fetch_earnings
+from news_fetcher import fetch_news
+from web_search import perform_gpt_generated_searches
+from api_clients import generate_gpt_response
+from config_loader import load_settings
 
 settings = load_settings()
 
