@@ -1,116 +1,82 @@
-import os
-from datetime import datetime
-from api_clients import generate_gpt_response
-from market_data_fetcher import fetch_market_data
-from web_search import perform_gpt_generated_searches
-from alternative_data_fetcher import fetch_alternative_sentiment
-from macro_data_fetcher import fetch_macro_data
-from earnings_data_fetcher import fetch_earnings_data
-from news_fetcher import fetch_news
-from translator import translate_to_hungarian
-from config_loader import load_settings, load_prompts
-from utils import identify_missing_data, fetch_additional_data, format_market_data_prompt
+# generate_report.py (strukturált javaslat)
+
+import datetime
+from scripts.market_data import fetch_market_data
+from scripts.earnings_data_fetcher import fetch_earnings
+from scripts.news_fetcher import fetch_news
+from scripts.web_search import perform_gpt_generated_searches
+from scripts.api_clients import generate_gpt_response
+from scripts.config_loader import load_settings
 
 settings = load_settings()
-prompts = load_prompts()
 
-def generate_outline(search_results, market_data, sentiment_data, macro_data, earnings_data, news_data, date_str):
-    prompt = prompts["outline_prompt"].format(
-        date=date_str,
-        search_results=search_results,
-        market_data=market_data,
-        sentiment_data=sentiment_data,
-        macro_data=macro_data,
-        earnings_data=earnings_data,
-        news_data=news_data
-    )
-    return generate_gpt_response(prompt, max_tokens=settings["general"]["token_limit"])
+def generate_daily_report(date_str):
+    print(f"🗓️ Generating market report for {date_str}")
 
-def generate_analysis(outline, market_data_prompt, date_str):
-    prompt = prompts["analysis_prompt"].format(outline=outline, market_data_prompt=market_data_prompt, date=date_str)
-    return generate_gpt_response(prompt, max_tokens=settings["general"]["token_limit"])
+    # 1. Fetch all market and macro data
+    market_data = fetch_market_data()
+    print("✅ Market data fetched")
 
-def perform_iterative_tuning(draft_analysis, market_data_prompt, date_str, iterations=2):
-    analysis = draft_analysis
-    for i in range(iterations):
-        refinement_prompt = prompts["refinement_prompt"].format(
-            draft_analysis=analysis,
-            market_data_prompt=market_data_prompt,
-            date=date_str
-        )
-        analysis = generate_gpt_response(refinement_prompt, max_tokens=settings["general"]["token_limit"])
-        print(f"🔄 Iteration {i+1} of refinement completed.")
-    return analysis
+    earnings_data = fetch_earnings(["AAPL", "TSLA", "NVDA", "MSFT", "GOOG"])
+    print("✅ Earnings data fetched")
 
-def save_report(content, directory, filename):
-    os.makedirs(directory, exist_ok=True)
-    filepath = os.path.join(directory, filename)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(content)
-    return filepath
+    news_data = fetch_news(["stock market", "Federal Reserve", "US economy"])
+    print("✅ News data fetched")
+
+    web_search_data = perform_gpt_generated_searches(date_str)
+    print("✅ Web search data fetched")
+
+    # 2. Load prompt templates
+    with open("prompts/outline_prompt_en.txt") as file:
+        outline_prompt = file.read()
+
+    with open("prompts/analysis_prompt_en.txt") as file:
+        analysis_prompt = file.read()
+
+    # 3. Generate outline
+    outline_input = f"{outline_prompt}\n\nMarket data:\n{market_data}\n\nEarnings:\n{earnings_data}\n\nNews:\n{news_data}\n\nWeb Search Results:\n{web_search_data}"
+    outline = generate_gpt_response(outline_input, model="gpt-4.1")
+    print("📝 Outline generated")
+
+    # 4. Generate initial analysis draft
+    analysis_input = f"{analysis_prompt}\n\nOutline:\n{outline}"
+    draft_analysis = generate_gpt_response(analysis_input, model="gpt-4.1")
+    print("📊 Draft analysis generated")
+
+    # 5. Identify missing data (iterative step)
+    missing_data_prompt = f"Check the following analysis and list any missing or unspecified numeric data points explicitly mentioned:\n\n{draft_analysis}"
+    missing_data_response = generate_gpt_response(missing_data_prompt, model="gpt-4.1")
+
+    # Fetch additional missing data (iteratively)
+    if missing_data_response.strip().lower() != "none":
+        print("🔍 Missing data identified:", missing_data_response)
+        additional_data = perform_gpt_generated_searches(missing_data_response)
+        print("🔄 Additional data fetched")
+        
+        # Regenerate final analysis
+        final_analysis_prompt = f"{draft_analysis}\n\nAdditional data to include:\n{additional_data}"
+        final_analysis = generate_gpt_response(final_analysis_prompt, model="gpt-4.1")
+    else:
+        final_analysis = draft_analysis
+        print("✅ No missing data")
+
+    # 6. Save English report
+    english_report_path = f"docs/daily/{date_str}-market-report-en.md"
+    with open(english_report_path, "w") as file:
+        file.write(final_analysis)
+    print(f"📄 English report saved: {english_report_path}")
+
+    # 7. Translate and save Hungarian report
+    translation_prompt = f"Translate the following text to Hungarian:\n\n{final_analysis}"
+    hungarian_report = generate_gpt_response(translation_prompt, model="gpt-4.1")
+    hungarian_report_path = f"docs/daily/{date_str}-market-report-hu.md"
+    with open(hungarian_report_path, "w") as file:
+        file.write(hungarian_report)
+    print(f"📄 Hungarian report saved: {hungarian_report_path}")
 
 def main():
-    date_str = datetime.now().strftime("%Y-%m-%d")
-    print(f"🗓️ Generating market report for date: {date_str}")
-
-    print("🔎 Performing GPT-generated searches...")
-    search_results = perform_gpt_generated_searches()
-
-    print("📊 Fetching market data...")
-    market_data = fetch_market_data()
-
-    print("📈 Fetching alternative sentiment data...")
-    sentiment_data = fetch_alternative_sentiment()
-
-    print("📉 Fetching macroeconomic data...")
-    macro_data = fetch_macro_data()
-
-    print("📑 Fetching earnings data...")
-    earnings_data = fetch_earnings_data()
-
-    print("📰 Fetching news data...")
-    news_data = fetch_news()
-
-    market_data_prompt = format_market_data_prompt(market_data, date_str)
-
-    print("📝 Generating report outline...")
-    outline = generate_outline(
-        search_results, market_data, sentiment_data, macro_data, earnings_data, news_data, date_str)
-
-    print("📊 Generating draft analysis...")
-    draft_analysis = generate_analysis(outline, market_data_prompt, date_str)
-
-    print("🔍 Checking for missing data...")
-    missing_data = identify_missing_data(draft_analysis, market_data)
-    if missing_data:
-        print(f"🔄 Missing data found: {missing_data}")
-        additional_data = fetch_additional_data(missing_data)
-        market_data_prompt += "\n" + format_market_data_prompt(additional_data, date_str)
-    else:
-        print("✅ No missing data found.")
-
-    print("🔄 Performing iterative tuning...")
-    final_analysis_en = perform_iterative_tuning(draft_analysis, market_data_prompt, date_str)
-
-    print("🌍 Translating analysis to Hungarian...")
-    final_analysis_hu = translate_to_hungarian(final_analysis_en)
-
-    output_dir_en = os.path.join(settings["output"]["output_dir"], "en")
-    output_dir_hu = os.path.join(settings["output"]["output_dir"], "hu")
-
-    filename_en = date_str + "-market-report-en.md"
-    filename_hu = date_str + "-piaci-jelentes-hu.md"
-
-    print("💾 Saving English report...")
-    save_report(final_analysis_en, output_dir_en, filename_en)
-
-    print("💾 Saving Hungarian report...")
-    save_report(final_analysis_hu, output_dir_hu, filename_hu)
-
-    save_report(final_analysis_en, output_dir_en, "latest.md")
-    save_report(final_analysis_hu, output_dir_hu, "latest.md")
-
-    print("✅ Market reports saved successfully.")
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    generate_daily_report(date_str)
 
 if __name__ == "__main__":
     main()
