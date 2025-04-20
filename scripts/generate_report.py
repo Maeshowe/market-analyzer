@@ -1,7 +1,7 @@
 # generate_report.py (strukturált javaslat)
 
 import datetime
-from market_data import fetch_market_data
+from market_data import fetch_all_market_data
 from earnings_data_fetcher import fetch_earnings
 from news_fetcher import fetch_news
 from web_search import perform_gpt_generated_searches
@@ -14,7 +14,7 @@ def generate_daily_report(date_str):
     print(f"🗓️ Generating market report for {date_str}")
 
     # 1. Fetch all market and macro data
-    market_data = fetch_market_data()
+    market_data = fetch_all_market_data()
     print("✅ Market data fetched")
 
     earnings_data = fetch_earnings(["AAPL", "TSLA", "NVDA", "MSFT", "GOOG"])
